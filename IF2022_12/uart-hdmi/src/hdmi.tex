@@ -1,0 +1,252 @@
+\section{UART から HDMIへ}
+Tang Nano 9K の HDMI 出力端子を有効に使うために UART からの
+入力を HDMI へと出力するシステムを考えます。
+HDMI への出力は Tang Nano 9K の example \footnote{github のレポジトリ} にある 
+picotiny を利用します。picotiny は RISC-V を使用した HDMI 出力を含む
+典型例として example に収録されており、その中の svo\_hdmi\_top.v を
+ほぼそのまま利用することで簡単に VGA の表示ができます。
+名称の
+SVO
+\footnote {
+	\url{https://github.com/cliffordwolf/SimpleVOut}
+}
+は Simple Video Output の略のようで
+Claire Wolf 氏が Xilinx 用に開発したオープンソースの
+モジュール群です。そのため、インタフェースが AXI Stream になっています。
+
+\subsection{Polyphony でコンバート}
+Polyphony の役目はインタフェースの変換です(図\ref{polyphony-conv})。
+
+UART で入力し HDMI へと出力する全体の流れを図\ref{uart-to-hdmi}に
+示します。UART の RX で受けたアスキーコードは、
+一旦 UART MASTER に蓄えられます。Polyphony で書いたモジュールは
+簡易バス・インターフェースを用いてコードを読み込みます。
+その後、SVO に対し AXI Stream を通してコードを送ります(図\ref{polyphony-conv})。
+出力は HDMI 用の4組の信号線で、TMDS というプロトコルを使用し、
+最終的には基板外へのHDMI出力信号となります。
+
+UART の入力は Python で書くことが出来ました。
+AXI Stream へのデータの引き渡しも、簡易的には Python で書くことが出来ます。
+ただし、AXI Stream は細かい規定があり、
+そのすべてを満足しようとするのは現在の Polyphony では難しく、
+あくまでこのシステムでのみ動くコードになっていることに注意が必要です。
+より細かいタイミングを Python で記述しようとする場合は
+開発中の Polyphony (github の devel のブランチ) を使う必要があります。
+
+\figureimage{uart-to-hdmi}{UART から HDMI への全体図}
+\figureimage{polyphony-conv}{Polyphony で変換するインタフェース図}
+
+\subsection{AXI Stream でアスキーコード入力を受け付ける}
+SVO は AXI Stream の入力としてアスキーコードを受け付けて画面に表示する
+機能を持っています。
+AXI Stream は 8bit の term\_in\_tdata にアスキーコードを設定した上で、
+term\_in\_tvalid にデータ有効であることを示すために 1 を書き込みます。
+term\_in\_tvalid が 1 になったタイミングで、SVO の term\_out\_tready が
+1 であれば、データが受け付けられたと解釈します。
+
+
+\subsection{AXI Stream について}
+TBD
+
+\subsection{HDMI と UART のインタフェースをトップモジュールとしてつくる}
+まずは段階的に実現します。
+あらたに Gowin の IDE でプロジェクトを作りトップモジュールを作ります(リスト\ref{uart-hdmi-top})。
+ここではプロジェクト名を uart-hdmi としました。合わせて物理制約ファイルも
+掲げます(リスト\ref{uart-hdmi-cst})。
+
+\begin{table}
+\label{uart-hdmi-top}
+\caption{UART と HDMI の I/F を含むトップモジュール}
+\begin{C++}
+module top(
+    input wire clk,
+
+    output wire uart_tx,
+    input wire uart_rx,
+
+    output wire tmds_clk_n,
+    output wire tmds_clk_p,
+    output wire [2:0] tmds_d_n,
+    output wire [2:0] tmds_d_p,
+
+    input wire sw1_i,
+    input wire sw2_i,
+    output wire [5:0] led_o
+);
+\end{C++}
+\end{table}
+
+\begin{table}
+\label{uart-hdmi-cst}
+\caption{UART と HDMI のI/F 用の物理制約ファイル}
+\begin{C++}
+IO_LOC "clk" 52;
+IO_PORT "clk" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+// UART
+IO_LOC "uart_tx" 17;
+IO_PORT "uart_tx" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC "uart_rx" 18;
+IO_PORT "uart_rx" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+
+// TMDS
+IO_LOC "tmds_d_p[0]" 71,70;
+IO_PORT "tmds_d_p[0]" PULL_MODE=NONE DRIVE=8;
+IO_LOC "tmds_d_p[1]" 73,72;
+IO_PORT "tmds_d_p[1]" PULL_MODE=NONE DRIVE=8;
+IO_LOC "tmds_d_p[2]" 75,74;
+IO_PORT "tmds_d_p[2]" PULL_MODE=NONE DRIVE=8;
+IO_LOC "tmds_clk_p" 69,68;
+IO_PORT "tmds_clk_p" PULL_MODE=NONE DRIVE=8;
+\end{C++}
+\end{table}
+
+\subsection{表示のために SVO をブラックボックスとして使う}
+HDMI へ表示するには SVO の svo\_hdmi\_top モジュールを使います(リスト\ref{svo-hdmi-top})。
+AXI Stream のプロトコルに沿って tdata にアスキーコードを送れば
+HDMI へ表示してくれるので、それをブラックボックスとして使います。
+
+特徴的なのはクロックが３つあることでしょう。
+clk は AXI Stream の処理用のクロック
+clk\_pixel は描画用のクロックで、今回の出力解像度は VGA(640x480@60)
+としたため 25.175Hz、
+clk\_5x\_pixel は HDMI 用 で clk\_pixel の5倍です。
+
+clk は画像処理をするためのクロックとも言え、ckl\_pixel より
+速くすることで処理効率あげ、複雑な画像処理でも表示が要求するリアルタイム性に
+追従するように設計することが可能です。
+
+\begin{table}
+\label{svo-hdmi-top}
+\caption{svo\_hdmi\_top のインターフェース}
+
+\begin{C++}
+module svo_hdmi_top (
+	input clk,
+	input resetn,
+
+	// video clocks
+	input clk_pixel,
+	input clk_5x_pixel,
+	input locked,
+
+	// AXI Stream 
+	input term_in_tvalid,
+	output term_out_tready,
+	input [7:0] term_in_tdata,
+
+	// output signals
+	output       tmds_clk_n,
+	output       tmds_clk_p,
+	output [2:0] tmds_d_n,
+	output [2:0] tmds_d_p
+);
+\end{C++}
+\end{table}
+
+\subsection{ピクセル・クロックを作るにはPLLを使う}
+表示にはピクセル・クロックとして 25.175MHz と 125.875MHz が必要になります。
+Tang Nano 9K では 27MHz のクロック入力があるので、
+その１つの周波数から複数の周波数を生成します。
+生成するにはFPGA内に予め備え付けられたPLL(Phase Locked Loop)\footnote{Gowin
+の仕様書では rPLL}のプリミティブ(図\ref{PLL})\footnote{
+PLL のプリミティブのI/Fは複雑です。Gowin IDE の
+IPCore Generator を使うと必要なI/Fだけを持ったラッパー・モジュールを自動生成してくれます。
+}
+をIPコアから使います。
+
+\figureimage{PLL}{PLL のプリミティブ}
+
+\subsection{PLL のIPコアを設定する}
+\footnote{詳しくは UG286-1.8J\_Gowin Clockユーザーガイド.pdf}
+\figureimage{rPLL-ipcore}{PLL の IPコア}
+IPCore Generator を使って PLL の IP コアを設定し、
+必要なクロックを作るようにします
+(図 \ref{rPLL-ipcore})。
+CLKIN はシステムの 27MHz に Expected Frequency は 125.875 MHz に設定し、
+Calculate ボタンを押します。すると、Actual Frequency の欄が 126MHz となり
+エラーになってしまいます(図 \ref{pll-error})。
+27MHz からは正確な 125.875MHz は作れないようです。そこで、生成される
+クロック周波数の許容範囲を決める Tolerance として 0.2 \% を選択し
+再度 Calculate とするとエラーがなくなります。
+
+PLL の クロック出力は安定するまで時間がかかることがあります。
+安定したことを示す lock 信号線も取り出せるように Eanble Lock の
+チェックもしておきます。
+
+画像処理を含めた全体の処理用に CLKOUTD から 63MHz を出力しています。
+%CLKOUTD3 も有効にしていますが、今回は使っていません。
+
+1つの PLL からはうまく 25.175MHz を作れないようなので
+IP コアの CLKDIV も使いました(図 \ref{clkdiv})。
+126MHz のクロックを 1/5 にしています。
+これで 25.2MHz のクロックが出来たはずなので
+VGA 用のピクセルクロックとします。
+\figureimage{clkdiv}{CLKDIV IP コア}
+
+クロックの設定が終わったらテスト的にトップモジュール内で配線をし、
+HDMI へ正常に映像出力がなされるかどうかを確認します。
+この時点ではまだ UART も Polyphony のモジュールも接続しておらず、
+比較的複雑なクロック関連の確認をしていることになります(図\ref{hdmi-clock})。
+うまく行けば、ディスプレーに SVO が標準で出力するテスト画像が表示されます。
+
+\figureimage{hdmi-clock}{PLL を使った複数のクロック}
+
+\subsection{Polyphony でのインタフェースとワーカー}
+UART からアスキーコードを入力することはすでに出来ています。
+また HDMI を通して VGA 出力もすでに出来ています。
+この２つを合わせることで、Linux からキーボード入力すると
+そのままディスプレに表示するように改造しましょう。
+
+Polyphony で対応するインタフェースを作ります。class 名称を
+\pythoninline{UART2AXIS} にしました(リスト \ref{polyphony-UART2AXIS})。
+
+\begin{python}[label=polyphony-UART2AXIS, caption="Polyphony の UART2AXIS インタフェース"]
+@module
+class UART2AXIS:
+    def __init__(self):
+        self.i_tx_en = Port(bit, 'out', 0)
+        self.waddr = Port(bit3, 'out', 0)
+        self.wdata = Port(bit8, 'out', 0)
+
+        self.i_rx_en = Port(bit, 'out', 0)
+        self.raddr = Port(bit3, 'out', 0)
+        self.rdata = Port(bit8, 'in')
+
+        self.term_out_tvalid = Port(bool, 'out', 0)
+        self.term_out_tdata = Port(bit8, 'out', 0)
+        self.term_out_tready = Port(bool, 'in', 0)
+
+        self.append_worker(self.main)
+\end{python}
+
+実際の処理は登録されたワーカー \pythoninline{main} で行います。
+前章で使った \pythoninline{check_valid} と \pythoninline{read_char}
+がそのまま使えます。
+AXI Stream では tready が常に 1 であることを期待しており簡易的ですが、
+この場合はうまく動作します。
+\pythoninline{self.term_out_tvalid} を True にした後に 
+\pythoninline{clkfence} せずに
+(リストではコメントアウト)
+False しています。
+\pythoninline{self.term_out_tvalid} への連続する２度の書き込みは
+順序よく処理しなければならず
+同時には出来ないため
+\pythoninline{clkfence} を使わなくても期待通りの動きとなります。
+もちろん、書き方を統一する意図で
+\pythoninline{clkfence} を書いても同じ動きとなります。
+
+\begin{python}[label=UART2AXIS-main, caption="UART2AXIS の main ワーカー"]
+    def main(self):
+        while is_worker_running():
+            if self.check_valid():
+                data = self.read_char()
+
+                self.term_out_tdata.wr(data)
+                self.term_out_tvalid.wr(True)
+
+                # clkfence()
+
+                self.term_out_tvalid.wr(False)
+\end{python}
+
