@@ -1,0 +1,3 @@
+[submodule "swapforth"]
+	path = swapforth
+	url = https://github.com/ryos36/swapforth
