@@ -11,7 +11,10 @@ module top(
 	output                      cmos_rst_n,        //cmos reset 
 	output                      cmos_pwdn,         //cmos power down
 	
-	output [3:0] 				state_led,
+	output [5:0] 				led6_n,
+    output                      scl,
+    output                      sda,
+    output                      xclk,         //cmos externl clock 
 
 	output [14-1:0]             ddr_addr,       //ROW_WIDTH=14
 	output [3-1:0]              ddr_bank,       //BANK_WIDTH=3
@@ -93,7 +96,10 @@ wire[15:0] 						write_data;
 wire[9:0]                       lut_index;
 wire[31:0]                      lut_data;
 
-assign cmos_xclk = cmos_clk;
+wire cmos_clk;
+wire cmos_clk12M;
+assign xclk = cmos_clk12M;
+assign cmos_xclk = cmos_clk12M;
 assign cmos_pwdn = 1'b0;
 assign cmos_rst_n = 1'b1;
 assign write_data = {cmos_16bit_data[4:0],cmos_16bit_data[10:5],cmos_16bit_data[15:11]};
@@ -101,8 +107,41 @@ assign write_data = {cmos_16bit_data[4:0],cmos_16bit_data[10:5],cmos_16bit_data[
 //状态指示灯
 // assign state_led[3] = 
 // assign state_led[2] = 
-assign state_led[1] = rst_n; //复位指示灯
-assign state_led[0] = init_calib_complete; //DDR3初始化指示灯
+//assign state_led[1] = rst_n; //复位指示灯
+//assign state_led[0] = init_calib_complete; //DDR3初始化指示灯
+
+reg [31:0] old_saved_b_counter;
+reg [31:0] saved_b_counter;
+reg [31:0] diff_b_counter;
+reg [31:0] b_counter;
+reg [31:0] c_counter;
+localparam CLK27M = 'd27_000_000;
+localparam CLK48M = 'd480_000_000;
+reg clk48m_led;
+always@(posedge clk) begin
+    if ( c_counter == (CLK27M - 1)) begin
+        c_counter <= 'd0;
+        old_saved_b_counter <= saved_b_counter;
+        saved_b_counter <= b_counter;
+    end else begin
+        if ( c_counter == 'd0) begin
+            if ( saved_b_counter > old_saved_b_counter ) begin
+                diff_b_counter <= saved_b_counter - old_saved_b_counter;
+            end
+        end
+        c_counter <= c_counter + 'd1;
+    end
+end
+
+always@(posedge cmos_pclk) begin
+    b_counter <= b_counter + 'd1;
+end
+
+//assign state_led[2] = clk48m_led;
+//assign state_led = saved_b_counter[31:27];
+//assign state_led = diff_b_counter[31:28];
+//assign state_led = diff_b_counter[27:24];
+//assign state_led = diff_b_counter[23:20];
 
 //generate the CMOS sensor clock and the SDRAM controller clock
 sys_pll sys_pll_m0(
@@ -111,7 +150,8 @@ sys_pll sys_pll_m0(
 	);
 cmos_pll cmos_pll_m0(
 	.clkin                     (clk                      		),
-	.clkout                    (cmos_clk 	              		)
+	.clkout                    (cmos_clk 	              		),
+    .clkoutd                   (cmos_clk12M                     )
 	);
 
 mem_pll mem_pll_m0(
@@ -121,6 +161,8 @@ mem_pll mem_pll_m0(
 	);
 
 //I2C master controller
+//`define USE_ORIGNAL_I2C_CONFIG
+`ifdef USE_ORIGNAL_I2C_CONFIG
 i2c_config i2c_config_m0(
 	.rst                        (~rst_n                   ),
 	.clk                        (clk                      ),
@@ -133,7 +175,9 @@ i2c_config i2c_config_m0(
 	.error                      (                         ),
 	.done                       (                         ),
 	.i2c_scl                    (cmos_scl                 ),
-	.i2c_sda                    (cmos_sda                 )
+	.i2c_sda                    (cmos_sda                 ),
+    .scl(scl),
+    .sda(sda)
 );
 //configure look-up table
 lut_ov5640_rgb565_480_272 lut_ov5640_rgb565_480_272_m0(
@@ -141,15 +185,198 @@ lut_ov5640_rgb565_480_272 lut_ov5640_rgb565_480_272_m0(
 	.lut_data                   (lut_data                 )
 );
 //CMOS sensor 8bit data is converted to 16bit data
+`else
+wire i2c_scl_o;
+wire i2c_scl_t;
+wire i2c_scl_i;
+
+wire i2c_sda_o;
+wire i2c_sda_t;
+wire i2c_sda_i;
+
+wire i2c_clk;
+reg [9:0] i2c_clk_divider = 10'd0;
+reg once_reset = 1'b1;
+assign i2c_clk = i2c_clk_divider[9];
+
+always @(posedge clk) begin
+    i2c_clk_divider <= i2c_clk_divider + 10'd1;
+
+    if (i2c_clk_divider[7] == 1'b1) begin
+        once_reset <= 1'b0;
+    end
+end
+
+wire [7:0] debug_print_pin;
+assign led6_n = ~debug_print_pin[5:0];
+
+ov5640_initiator ov5640_initiator0 (
+    .clk(i2c_clk),
+    .rst(once_reset),
+
+    .resend(1'b0),
+
+    .i2c_scl_i(i2c_scl_i),
+    .i2c_scl_o(i2c_scl_o),
+    .i2c_scl_t(i2c_scl_t),
+
+    .i2c_sda_i(i2c_sda_i),
+    .i2c_sda_o(i2c_sda_o),
+    .i2c_sda_t(i2c_sda_t),
+
+    .done(),
+    .debug_print_pin(debug_print_pin)
+);
+
+assign scl = i2c_scl_i;
+assign sda = i2c_sda_i;
+
+IOBUF scl_iobuf(
+    .O(i2c_scl_i),
+    .IO(cmos_scl),
+    .I(i2c_scl_o),
+    .OEN(i2c_scl_t)
+);
+
+IOBUF sda_iobuf(
+    .O(i2c_sda_i),
+    .IO(cmos_sda),
+    .I(i2c_sda_o),
+    .OEN(i2c_sda_t)
+);
+`endif
+
+wire[15:0]                      cmos_16bit_data_m0;
+wire                            cmos_16bit_clk_m0;
+wire cmos_16bit_wr_m0;
 cmos_8_16bit cmos_8_16bit_m0(
 	.rst                        (~rst_n                   ),
 	.pclk                       (cmos_pclk                ),
 	.pdata_i                    (cmos_db                  ),
 	.de_i                       (cmos_href                ),
-	.pdata_o                    (cmos_16bit_data          ),
-	.hblank                     (cmos_16bit_wr            ),
-	.de_o                       (cmos_16bit_clk           )
+	.pdata_o                    (cmos_16bit_data_m0       ),
+	.hblank                     (cmos_16bit_wr_m0         ),
+	.de_o                       (cmos_16bit_clk_m0        )
 );
+
+wire cmos_16bit_wr;
+reg [7:0] cam_data8;
+reg cam_de;
+
+//assign cmos_16bit_data = {cmos_db[7:3], cmos_db[7:2], cmos_db[7:3]};
+//assign cmos_16bit_data = {5'b00000, 6'b111111, 5'b00000};
+//assign cmos_16bit_data = {cam_data8[7:3], cam_data8[7:2], cam_data8[7:3]};
+//assign cmos_16bit_data = {hcount[9:7] ,2'b0 , hcount[5:0], 5'b0};
+//assign cmos_16bit_data = {6'd0, hcount};
+//assign cmos_16bit_wr = cmos_href_d;
+//assign cmos_16bit_clk = cmos_pclk;
+
+//assign cmos_16bit_data = cmos_16bit_data_m0;
+//assign cmos_16bit_wr = cmos_16bit_wr_m0;
+assign cmos_16bit_clk = cmos_16bit_clk_m0;
+
+reg cmos_href_d;
+reg [9:0] hcount;
+always@(posedge cmos_pclk) 
+begin
+    cam_data8 <= cmos_db;
+    cam_de <= cmos_href;
+
+    if ( cmos_href_d & ~cmos_href ) begin
+        hcount <= 10'd0;
+        cam_de <= 1'b0;
+    end else if ( cmos_href ) begin
+        //cam_data8 <= hcount[7:0];
+        if ( hcount == 10'd479 ) begin
+            cam_de <= 1'b0;
+        end else begin
+            hcount <= hcount + 10'd1;
+            cam_de <= 1'b1;
+        end
+    end
+
+    cmos_href_d <= cmos_href;
+end
+
+//----------------------------------------------------------------
+localparam BW_DATA_WIDTH = 7;
+logic lb_de_w;
+
+logic [BW_DATA_WIDTH-1:0] lb_data0_w;
+logic [BW_DATA_WIDTH-1:0] lb_data1_w;
+logic [BW_DATA_WIDTH-1:0] lb_data2_w;
+
+logic [BW_DATA_WIDTH-1:0] lb_data_i;
+
+assign lb_data_i = 
+        {1'b0, ({1'b0, cmos_16bit_data_m0[15:11]} + {1'b0, cmos_16bit_data_m0[4:0]})} + 
+        {1'b0, cmos_16bit_data_m0[10:5]};
+
+logic [15:0] my_data_r;
+logic do_red = ( my_data_r == cmos_16bit_data_m0 )?1:0;
+always @(posedge cmos_16bit_clk_m0) begin
+    my_data_r <= cmos_16bit_data_m0;
+end
+
+linebuffer #(
+    .DATA_WIDTH(BW_DATA_WIDTH),
+    .MAX_DATA_LENGTH(480)
+) linebuffer0 (
+    .clk(cmos_16bit_clk_m0),
+
+    .vsync_i(cmos_vsync),
+    .de_i(cmos_16bit_wr_m0),
+    .data_i(lb_data_i),
+
+    .de_o(lb_de_w),
+    .data0_o(lb_data0_w),
+    .data1_o(lb_data1_w),
+    .data2_o(lb_data2_w)
+);
+
+/*
+assign cmos_16bit_data = {
+    lb_data1_w[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5],
+    lb_data1_w[BW_DATA_WIDTH-1:BW_DATA_WIDTH-6],
+    lb_data1_w[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5]};
+assign cmos_16bit_wr = lb_de_w;
+*/
+
+
+logic f33_de;
+logic [BW_DATA_WIDTH-1:0] f33_data;
+
+edge_filter3x3 
+#(
+    .DATA_WIDTH(BW_DATA_WIDTH)
+)
+filter3x3_0 (
+    .clk(cmos_16bit_clk_m0),
+
+    .vsync_i(cmos_vsync),
+    .de_i(lb_de_w),
+    .data0_i(lb_data0_w),
+    .data1_i(lb_data1_w),
+    .data2_i(lb_data2_w),
+
+    .de_o(f33_de),
+    .data_o(f33_data)
+);
+
+/*
+assign cmos_16bit_data = {
+    f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5],
+    f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-6],
+    f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5]};
+*/
+assign cmos_16bit_wr = f33_de;
+
+assign cmos_16bit_data = 
+    (f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-2] == 2'b00)?
+    cmos_16bit_data_m0:
+    {f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5],
+     f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-6],
+     f33_data[BW_DATA_WIDTH-1:BW_DATA_WIDTH-5]};
 
 //The video output timing generator and generate a frame read data request
 wire out_de;

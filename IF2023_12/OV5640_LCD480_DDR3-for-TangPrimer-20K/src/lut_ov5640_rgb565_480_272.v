@@ -62,8 +62,8 @@ begin
 	    10'd 53: lut_data <= {8'h78 , 24'h3004ff};// enable clocks 
 	    10'd 54: lut_data <= {8'h78 , 24'h300e58};// MIPI power down, DVP enable
 	    10'd 55: lut_data <= {8'h78 , 24'h302e00};
-	    10'd 56: lut_data <= {8'h78 , 24'h430060};// RGB565
-	    10'd 57: lut_data <= {8'h78 , 24'h501f01};// ISP RGB 
+	    10'd 56: lut_data <= {8'h78 , 24'h430060};// BGBG
+	    10'd 57: lut_data <= {8'h78 , 24'h501f01};// ISP RAW(DPC) 
 	    10'd 58: lut_data <= {8'h78 , 24'h440e00};
 	    10'd 59: lut_data <= {8'h78 , 24'h5000a7}; // Lenc on, raw gamma on, BPC on, WPC on, CIP on // AEC target
 	    10'd 60: lut_data <= {8'h78 , 24'h3a0f30};// stable range in high
@@ -215,7 +215,7 @@ begin
 	    10'd206: lut_data <= {8'h78 , 24'h502500};
 	    10'd207: lut_data <= {8'h78 , 24'h300802}; // wake up from standby, bit[6]
 	    10'd208: lut_data <= {8'h78 , 24'h303511};// PLL
-	    10'd209: lut_data <= {8'h78 , 24'h30368C};// PLL
+	    10'd209: lut_data <= {8'h78 , 24'h303646};// PLL 46-30fps 8c-60fps
 	    10'd210: lut_data <= {8'h78 , 24'h3c0708};// light meter 1 threshold [7:0]
 	    10'd211: lut_data <= {8'h78 , 24'h382047};// Sensor flip off, ISP flip on
 	    10'd212: lut_data <= {8'h78 , 24'h382101};// Sensor mirror on, ISP mirror on, H binning on

@@ -1,19 +1,20 @@
-//Copyright (C)2014-2022 Gowin Semiconductor Corporation.
+//Copyright (C)2014-2023 Gowin Semiconductor Corporation.
 //All rights reserved.
 //File Title: IP file
-//GOWIN Version: V1.9.8.07 Education
+//GOWIN Version: V1.9.8.11 Education
 //Part Number: GW2A-LV18PG256C8/I7
-//Device: GW2A-18C
-//Created Time: Thu Sep 01 15:07:02 2022
+//Device: GW2A-18
+//Device Version: C
+//Created Time: Wed Sep 13 11:51:32 2023
 
-module cmos_pll (clkout, clkin);
+module cmos_pll (clkout, clkoutd, clkin);
 
 output clkout;
+output clkoutd;
 input clkin;
 
 wire lock_o;
 wire clkoutp_o;
-wire clkoutd_o;
 wire clkoutd3_o;
 wire gw_gnd;
 
@@ -23,7 +24,7 @@ rPLL rpll_inst (
     .CLKOUT(clkout),
     .LOCK(lock_o),
     .CLKOUTP(clkoutp_o),
-    .CLKOUTD(clkoutd_o),
+    .CLKOUTD(clkoutd),
     .CLKOUTD3(clkoutd3_o),
     .RESET(gw_gnd),
     .RESET_P(gw_gnd),

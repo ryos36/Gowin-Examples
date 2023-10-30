@@ -8,6 +8,7 @@
         <File path="src/cmos_8_16bit.v" type="file.verilog" enable="1"/>
         <File path="src/ddr3_memory_interface/DDR3MI.v" type="file.verilog" enable="1"/>
         <File path="src/fifo_hs/video_fifo.v" type="file.verilog" enable="1"/>
+        <File path="src/filter.sv" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/cmos_pll.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/mem_pll.v" type="file.verilog" enable="1"/>
         <File path="src/gowin_rpll/sys_pll.v" type="file.verilog" enable="1"/>
@@ -17,6 +18,9 @@
         <File path="src/i2c_master/i2c_master_defines.v" type="file.verilog" enable="1"/>
         <File path="src/i2c_master/i2c_master_top.v" type="file.verilog" enable="1"/>
         <File path="src/i2c_master/timescale.v" type="file.verilog" enable="1"/>
+        <File path="src/i2c_polyphony/fifo.v" type="file.verilog" enable="1"/>
+        <File path="src/i2c_polyphony/ov5640_initiator.v" type="file.verilog" enable="1"/>
+        <File path="src/linebuffer.sv" type="file.verilog" enable="1"/>
         <File path="src/lut_ov5640_rgb565_480_272.v" type="file.verilog" enable="1"/>
         <File path="src/syn_gen.v" type="file.verilog" enable="1"/>
         <File path="src/testpattern.v" type="file.verilog" enable="1"/>

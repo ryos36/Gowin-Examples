@@ -1,12 +1,13 @@
 -series GW2A
--device GW2A-18C
+-device GW2A-18
+-device_version C
 -package PBGA256
 -part_number GW2A-LV18PG256C8/I7
 
 
 -mod_name cmos_pll
 -file_name cmos_pll
--path D:/Users/HUIP/Desktop/OV5640_LCD800_DDR3/src/gowin_rpll/
+-path /home/ryos/FPGA/Gowin/TangPrimer-20K-example/Cam2lcd/OV5640_LCD480_DDR3/src/gowin_rpll/
 -type PLL
 -rPll true
 -file_type vlg
@@ -17,6 +18,7 @@
 -fbdiv_sel 8
 -dyn_odiv_sel false
 -odiv_sel 32
+-dyn_sdiv_sel 2
 -dyn_da_en true
 -rst_sig false
 -rst_sig_p false
@@ -27,6 +29,7 @@
 -clkout_ft_dir 1
 -en_clkoutp false
 -clkoutp_bypass false
--en_clkoutd false
+-en_clkoutd true
 -clkoutd_bypass false
+-clkoutd_src CLKOUT
 -en_clkoutd3 false

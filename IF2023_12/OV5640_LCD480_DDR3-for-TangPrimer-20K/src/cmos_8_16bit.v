@@ -3,7 +3,7 @@ module cmos_8_16bit(
 	input              pclk,
 	input [7:0]        pdata_i,
 	input              de_i,
-	output reg[15:0]   pdata_o,
+	output wire[15:0]   pdata_o,
 	output reg	       hblank,
 	output reg         de_o
 );
@@ -41,15 +41,18 @@ always@(posedge pclk)begin
  	hblank <= de_d2;
 end 
 
+reg [15:0]  pdata_r;
+assign pdata_o = { pdata_r[4:0], pdata_r[10:5], pdata_r[15:11] };
 
 always@(posedge pclk or posedge rst)
 begin
 	if(rst)
-		pdata_o <= 16'd0;
+		pdata_r <= 16'd0;
 	else if(de_i && x_cnt)
-		pdata_o <= {pdata_i_d0,pdata_i};
+		pdata_r <= {pdata_i_d0,pdata_i};
+		//pdata_r <= {pdata_i_d0[7:3], pdata_i_d0[7:2], pdata_i_d0[7:3]};
 	else
-		pdata_o <= pdata_o;
+		pdata_r <= pdata_r;
 end
 
 endmodule 
