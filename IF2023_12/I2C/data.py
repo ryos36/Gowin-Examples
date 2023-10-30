@@ -1,0 +1,495 @@
+from polyphony.typing import List, bit, bit16, bit24
+
+ov2640_data = [
+    0xFF01,
+    0x1280,
+    0xFF00,
+    0x2cff,
+    0x2edf,
+    0xFF01,
+    0x3c32,
+    0x1180,
+    0x0902,
+    0x0428,
+    0x13E5,
+    0x1448,
+    0x1500,
+    0x2c0c,
+    0x3378,
+    0x3a33,
+    0x3bfb,
+    0x3e00,
+    0x4311,
+    0x1610,
+    0x3902,
+    0x3588,
+    0x220a,
+    0x3740,
+    0x2300,
+    0x34a0,
+    0x0602,
+    0x0688,
+    0x07c0,
+    0x0db7,
+    0x0e01,
+    0x4c00,
+    0x4a81,
+    0x2199,
+    0x2440,
+    0x2538,
+    0x2682,
+    0x4800,
+    0x4900,
+    0x5c00,
+    0x6300,
+    0x4600,
+    0x4700,
+    0x0C3A,
+    0x5D55,
+    0x5E7d,
+    0x5F7d,
+    0x6055,
+    0x6170,
+    0x6280,
+    0x7c05,
+    0x2080,
+    0x2830,
+    0x6c00,
+    0x6d80,
+    0x6e00,
+    0x7002,
+    0x7194,
+    0x73c1,
+    0x3d34,
+    0x5a57,
+    0x4Fbb,
+    0x509c,
+    0xFF00,
+    0xe57f,
+    0xF9C0,
+    0x4124,
+    0xE014,
+    0x76ff,
+    0x33a0,
+    0x4220,
+    0x4318,
+    0x4c00,
+    0x87D0,
+    0x883f,
+    0xd703,
+    0xd910,
+    0xD382,
+    0xc808,
+    0xc980,
+    0x7C00,
+    0x7D00,
+    0x7C03,
+    0x7D48,
+    0x7D48,
+    0x7C08,
+    0x7D20,
+    0x7D10,
+    0x7D0e,
+    0x9000,
+    0x910e,
+    0x911a,
+    0x9131,
+    0x915a,
+    0x9169,
+    0x9175,
+    0x917e,
+    0x9188,
+    0x918f,
+    0x9196,
+    0x91a3,
+    0x91af,
+    0x91c4,
+    0x91d7,
+    0x91e8,
+    0x9120,
+    0x9200,
+    0x9306,
+    0x93e3,
+    0x9303,
+    0x9303,
+    0x9300,
+    0x9302,
+    0x9300,
+    0x9300,
+    0x9300,
+    0x9300,
+    0x9300,
+    0x9300,
+    0x9300,
+    0x9600,
+    0x9708,
+    0x9719,
+    0x9702,
+    0x970c,
+    0x9724,
+    0x9730,
+    0x9728,
+    0x9726,
+    0x9702,
+    0x9798,
+    0x9780,
+    0x9700,
+    0x9700,
+    0xa400,
+    0xa800,
+    0xc511,
+    0xc651,
+    0xbf80,
+    0xc710,
+    0xb666,
+    0xb8A5,
+    0xb764,
+    0xb97C,
+    0xb3af,
+    0xb497,
+    0xb5FF,
+    0xb0C5,
+    0xb194,
+    0xb20f,
+    0xc45c,
+    0xa600,
+    0xa720,
+    0xa7d8,
+    0xa71b,
+    0xa731,
+    0xa700,
+    0xa718,
+    0xa720,
+    0xa7d8,
+    0xa719,
+    0xa731,
+    0xa700,
+    0xa718,
+    0xa720,
+    0xa7d8,
+    0xa719,
+    0xa731,
+    0xa700,
+    0xa718,
+    0x7f00,
+    0xe51f,
+    0xe177,
+    0xdd7f,
+    0xC20E,
+    0xFF01,
+    0xFF00,
+    0xE004,
+    0xDA04,
+    0xD703,
+    0xE177,
+    0xE000,
+    0xFF00,
+    0x0501,
+    0x5AA0,
+    0x5B78,
+    0x5C00,
+    0xFF01,
+    0x1180,
+    0xFF01,
+    0x1240,
+    0x030A,
+    0x3209,
+    0x1711,
+    0x1843,
+    0x1900,
+    0x1A4b,
+    0x3d38,
+    0x35da,
+    0x221a,
+    0x37c3,
+    0x34c0,
+    0x0688,
+    0x0d87,
+    0x0e41,
+    0x4203,
+    0xFF00,
+    0x0501,
+    0xE004,
+    0xC064,
+    0xC14B,
+    0x8C00,
+    0x5300,
+    0x5400,
+    0x51C8,
+    0x5296,
+    0x5500,
+    0x5700,
+    0x863D,
+    0x5080,
+    0xD380,
+    0x0500,
+    0xE000,
+    0xFF00,
+    0x0500,
+    0xFF00,
+    0xE004,
+    0xDA04,
+    0xD703,
+    0xE177,
+    0xE000,
+    0xFFFF
+] # type:List[bit16]
+
+ov5640_data = [
+    0x310311, # system clock from pad, bit[1]
+    0x300882, # software reset, bit[7]#  delay 5ms 
+    0x300842, # software power down, bit[6]
+    0x310303, # system clock from PLL, bit[1]
+    0x3017ff, # FREX, Vsync, HREF, PCLK, D[9:6] output enable
+    0x3018ff, # D[5:0], GPIO[1:0] output enable
+    0x30341A, # MIPI 10-bit
+    0x303713, # PLL root divider, bit[4], PLL pre-divider, bit[3:0]
+    0x310801, # PCLK root divider, bit[5:4], SCLK2x root divider, bit[3:2] #  SCLK root divider, bit[1:0] 
+    0x363036,
+    0x36310e,
+    0x3632e2,
+    0x363312,
+    0x3621e0,
+    0x3704a0,
+    0x37035a,
+    0x371578,
+    0x371701,
+    0x370b60,
+    0x37051a,
+    0x390502,
+    0x390610,
+    0x39010a,
+    0x373112,
+    0x360008, # VCM control
+    0x360133, # VCM control
+    0x302d60, # system control
+    0x362052,
+    0x371b20,
+    0x471c50,
+    0x3a1343, # pre-gain = 1.047x
+    0x3a1800, # gain ceiling
+    0x3a19f8, # gain ceiling = 15.5x
+    0x363513,
+    0x363603,
+    0x363440,
+    0x362201, # 50/60Hz detection     50/60Hz 
+    0x3c0134, # Band auto, bit[7]
+    0x3c0428, # threshold low sum	 
+    0x3c0598, # threshold high sum
+    0x3c0600, # light meter 1 threshold[15:8]
+    0x3c0708, # light meter 1 threshold[7:0]
+    0x3c0800, # light meter 2 threshold[15:8]
+    0x3c091c, # light meter 2 threshold[7:0]
+    0x3c0a9c, # sample number[15:8]
+    0x3c0b40, # sample number[7:0]
+    0x381000, # Timing Hoffset[11:8]
+    0x381110, # Timing Hoffset[7:0]
+    0x381200, # Timing Voffset[10:8] 
+    0x370864,
+    0x400102, # BLC start from line 2
+    0x40051a, # BLC always update
+    0x300000, # enable blocks
+    0x3004ff, # enable clocks 
+    0x300e58, # MIPI power down, DVP enable
+    0x302e00,
+    0x430060, # BGBG
+    0x501f01, # ISP RAW(DPC) 
+    0x440e00,
+    0x5000a7, # Lenc on, raw gamma on, BPC on, WPC on, CIP on # AEC target
+    0x3a0f30, # stable range in high
+    0x3a1028, # stable range in low
+    0x3a1b30, # stable range out high
+    0x3a1e26, # stable range out low
+    0x3a1160, # fast zone high
+    0x3a1f14, # fast zone low # Lens correction for
+    0x580023,
+    0x580114,
+    0x58020f,
+    0x58030f,
+    0x580412,
+    0x580526,
+    0x58060c,
+    0x580708,
+    0x580805,
+    0x580905,
+    0x580a08,
+    0x580b0d,
+    0x580c08,
+    0x580d03,
+    0x580e00,
+    0x580f00,
+    0x581003,
+    0x581109,
+    0x581207,
+    0x581303,
+    0x581400,
+    0x581501,
+    0x581603,
+    0x581708,
+    0x58180d,
+    0x581908,
+    0x581a05,
+    0x581b06,
+    0x581c08,
+    0x581d0e,
+    0x581e29,
+    0x581f17,
+    0x582011,
+    0x582111,
+    0x582215,
+    0x582328,
+    0x582446,
+    0x582526,
+    0x582608,
+    0x582726,
+    0x582864,
+    0x582926,
+    0x582a24,
+    0x582b22,
+    0x582c24,
+    0x582d24,
+    0x582e06,
+    0x582f22,
+    0x583040,
+    0x583142,
+    0x583224,
+    0x583326,
+    0x583424,
+    0x583522,
+    0x583622,
+    0x583726,
+    0x583844,
+    0x583924,
+    0x583a26,
+    0x583b28,
+    0x583c42,
+    0x583dce, # lenc BR offset
+    0x5180ff, # AWB B block
+    0x5181f2, # AWB control 
+    0x518200, # [7:4] max local counter, [3:0] max fast counter
+    0x518314, # AWB advanced 
+    0x518425,
+    0x518524,
+    0x518609,
+    0x518709,
+    0x518809,
+    0x518975,
+    0x518a54,
+    0x518be0,
+    0x518cb2,
+    0x518d42,
+    0x518e3d,
+    0x518f56,
+    0x519046,
+    0x5191f8, # AWB top limit
+    0x519204, # AWB bottom limit
+    0x519370, # red limit
+    0x5194f0, # green limit
+    0x5195f0, # blue limit
+    0x519603, # AWB control
+    0x519701, # local limit 
+    0x519804,
+    0x519912,
+    0x519a04,
+    0x519b00,
+    0x519c06,
+    0x519d82,
+    0x519e38, # AWB control
+    0x548001, # Gamma bias plus on, bit[0] 
+    0x548108,
+    0x548214,
+    0x548328,
+    0x548451,
+    0x548565,
+    0x548671,
+    0x54877d,
+    0x548887,
+    0x548991,
+    0x548a9a,
+    0x548baa,
+    0x548cb8,
+    0x548dcd,
+    0x548edd,
+    0x548fea,
+    0x54901d, # color matrix  
+    0x53811e, # CMX1 for Y
+    0x53825b, # CMX2 for Y
+    0x538308, # CMX3 for Y
+    0x53840a, # CMX4 for U
+    0x53857e, # CMX5 for U
+    0x538688, # CMX6 for U
+    0x53877c, # CMX7 for V
+    0x53886c, # CMX8 for V
+    0x538910, # CMX9 for V
+    0x538a01, # sign[9]
+    0x538b98, # sign[8:1] # UV adjust   
+    0x558006, # saturation on, bit[1]
+    0x558340,
+    0x558410,
+    0x558910,
+    0x558a00,
+    0x558bf8,
+    0x501d40, # enable manual offset of contrast
+    0x530008, # CIP sharpen MT threshold 1
+    0x530130, # CIP sharpen MT threshold 2
+    0x530210, # CIP sharpen MT offset 1
+    0x530300, # CIP sharpen MT offset 2
+    0x530408, # CIP DNS threshold 1
+    0x530530, # CIP DNS threshold 2
+    0x530608, # CIP DNS offset 1
+    0x530716, # CIP DNS offset 2 
+    0x530908, # CIP sharpen TH threshold 1
+    0x530a30, # CIP sharpen TH threshold 2
+    0x530b04, # CIP sharpen TH offset 1
+    0x530c06, # CIP sharpen TH offset 2
+    0x502500,
+    0x300802, # wake up from standby, bit[6]
+    0x303511, # PLL
+    0x303646, # PLL 46-30fps 8c-60fps
+    0x3c0708, # light meter 1 threshold [7:0]
+    0x382047, # Sensor flip off, ISP flip on
+    0x382101, # Sensor mirror on, ISP mirror on, H binning on
+    0x381431, # X INC 
+    0x381531, # Y INC
+    0x380000, # HS: X address start high byte
+    0x380100, # HS: X address start low byte
+    0x380200, # VS: Y address start high byte
+    0x380304, # VS: Y address start high byte 
+    0x38040a, # HW (HE)         
+    0x38053f, # HW (HE)
+    0x380607, # VH (VE)         
+    0x38079b, # VH (VE)      
+    0x380801, # DVPHO           # 480
+    0x3809e0, # DVPHO
+    0x380a01, # DVPVO           # 272
+    0x380b10, # DVPVO
+    0x380c07, # HTS             # Total horizontal size 
+    0x380d68, # HTS
+    0x380e03, # VTS             # total vertical size
+    0x380fd8, # VTS 
+    0x381306, # Timing Voffset 
+    0x361800,
+    0x361229,
+    0x370952,
+    0x370c03, 
+    0x3a0217, # 60Hz max exposure, night mode 5fps
+    0x3a0310, # 60Hz max exposure, banding filters are calculated automatically in camera driver
+    0x3a1417, # 50Hz max exposure, night mode 5fps
+    0x3a1510, # 50Hz max exposure     
+    0x400402, # BLC 2 lines 
+    0x30021c, # reset JFIFO, SFIFO, JPEG
+    0x3006c3, # disable clock of JPEG2x, JPEG
+    0x471303, # JPEG mode 3
+    0x440704, # Quantization scale 
+    0x460b35,
+    0x460c22,
+    0x483722, # DVP CLK divider
+    0x382402, # DVP CLK divider 
+    0x5001a3, # SDE on, scale on, UV average off, color matrix on, AWB on
+    0x350300, # AEC/AGC on 
+    0x301602, # Strobe output enable
+    0x3b070a, # FREX strobe mode1		  
+    0x3b0083, # STROBE CTRL: strobe request ON, Strobe mode: LED3 
+    0x3b0000, # STROBE CTRL: strobe request OFF
+    0xffffff,
+] # type:List[bit24]
