@@ -1,0 +1,5 @@
+camera_hdmi.gprj.user
+impl
+*.vcd
+src/ov2640/ov2640_m_ok.v
+src/ov2640/tb
